@@ -172,7 +172,40 @@ Describe 'Norton' {
                 $sut.ToString() | Should -Be 'test -arg value -flag'
             }
         }
-        Context "Helper methods" {
+        Context "With one sensitive value" {
+            BeforeAll {
+                $sut = [ThingToRun]::New('test')
+                $arg = [Argument]::New('-arg', 'value')
+                $arg.IsSensitive = $true
+                $sut = $sut.AddArgument($arg)
+            }
+            It 'Should have a Name' {
+                $sut.Name | Should -Be 'test'
+
+            }
+            It 'Should mask an argument' {
+                $sut.ArgumentList.count | Should -Be 1
+                $sut.ToString($true) | Should -Be 'test -arg *****'
+            }
+            It 'Should not mask by default' {
+                $sut.ArgumentList.count | Should -Be 1
+                $sut.ToString() | Should -Be 'test -arg value'
+            }
+        }
+        Context "With multiple values, one sensitive" {
+            BeforeAll {
+                $sut = [ThingToRun]::New('test')
+                $arg1 = [Argument]::New('-arg', 'value')
+                $arg1.IsSensitive = $true
+                $arg2 = [Argument]::New('-arg2', 'value2')
+                $sut = $sut.AddArgument($arg).AddArgument($arg2)
+            }
+            It 'Should only the sensetive argument' {
+                $sut.ArgumentList.count | Should -Be 2
+                $sut.ToString($true) | Should -Be 'test -arg ***** -arg2 value2'
+            }
+        }
+        Context 'Helper methods' {
             It '.AddArgument($name)' {
                 $sut = [ThingToRun]::New('test').AddArgument('-flag')
                 $sut.ArgumentList.count | Should -Be 1
@@ -188,6 +221,18 @@ Describe 'Norton' {
                 $sut.ArgumentList.count | Should -Be 1
                 $sut.ToString() | Should -Be 'test -flag:value'
             }
+        }
+        Context 'Get ProcessStartInfo' {
+            BeforeAll {
+                $sut = [ThingToRun]::New('test').AddArgument('-flag')
+            }
+            It 'Should return a ProcessStartInfo object' {
+                $result = $sut.GetProcessStartInfo()
+
+                $result.FileName | Should -Be 'test'
+                $result.ArgumentList | Should -Be '-flag'
+            }
+
         }
     }
 }

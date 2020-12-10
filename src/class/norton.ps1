@@ -1,6 +1,7 @@
 class Argument {
     [string] $Name
     [bool] $HasValue = $false
+    [bool] $IsSensitive = $false
     [object[]] $Value
     hidden  [string] $Seperator = ''
     hidden [scriptblock] $ValueReduce = { $args -join ',' }
@@ -66,16 +67,24 @@ class Argument {
     }
 
     [string] ToString() {
+        return $this.ToString($false)
+    }
+
+    [string] ToString([bool]$sanitize) {
         $_argument = $this.Name
         $_value = [string]::Empty
         $_combined = [string]::Empty
 
         if ($this.HasValue) {
             $_value = if ($this.Value.Count -gt 1) { $this.ValueReduce.Invoke($this.Value) } else { $this.Value }
-        }
 
-        if ($this.HasQuote) {
-            $_value = '"{0}"' -f $_value
+            if ($this.IsSensitive -and $sanitize) {
+                $_value = '*****'
+            }
+
+            if ($this.HasQuote) {
+                $_value = '"{0}"' -f $_value
+            }
         }
 
         $_combined = $_argument, $_value -join $this.Seperator
@@ -115,11 +124,30 @@ class ThingToRun {
         return $this
     }
 
-
     [string] ToString() {
+        return $this.ToString($false)
+    }
+
+    [string] ToString([bool]$sanitize) {
         $_command = $this.Name
-        $_argument = $this.ArgumentList | ForEach-Object { $_.ToString() }
+        $_argument = $this.ArgumentList | ForEach-Object {
+            $_.ToString($sanitize)
+        }
 
         return '{0} {1}' -f $_command, ($_argument -join ' ')
+    }
+
+    [Diagnostics.ProcessStartInfo] GetProcessStartInfo() {
+        $_processInfo = [Diagnostics.ProcessStartInfo]::new()
+        $_processInfo.FileName = $this.Name
+        $_processInfo.RedirectStandardError = $true
+        $_processInfo.RedirectStandardOutput = $true
+        $_processInfo.UseShellExecute = $false
+
+        $this.ArgumentList | ForEach-Object {
+            $_processInfo.ArgumentList.Add($_.ToString())
+        }
+
+        return $_processInfo
     }
 }
