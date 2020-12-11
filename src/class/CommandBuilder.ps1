@@ -145,11 +145,18 @@ class CommandBuilder {
 
     [string] ToString([bool]$sanitize) {
         $_command = $this.Name
-        $_argument = $this.ArgumentList | ForEach-Object {
-            $_.ToString($sanitize)
+
+        if ($this.ArgumentList.Count -ge 1) {
+            $_argument = $this.ArgumentList | ForEach-Object {
+                $_.ToString($sanitize)
+            }
+            return '{0} {1}' -f $_command, ($_argument -join ' ')
+        }
+        else {
+            return '{0}' -f $_command
         }
 
-        return '{0} {1}' -f $_command, ($_argument -join ' ')
+
     }
 
     [Diagnostics.ProcessStartInfo] GetProcessStartInfo() {
@@ -164,5 +171,129 @@ class CommandBuilder {
         }
 
         return $_processInfo
+    }
+}
+
+class OpCommand : CommandBuilder {
+
+    OpCommand() : base('op') {}
+
+}
+
+class OpCommandList : OpCommand {
+
+    OpCommandList() : base() {
+        $this.AddArgument('list')
+    }
+}
+
+class OpCommandGet : OpCommand {
+
+    OpCommandGet() : base() {
+        $this.AddArgument('get')
+    }
+}
+
+class OpCommandListItem : OpCommandList {
+
+    OpCommandListItem() : base() {
+        $this.AddArgument('items')
+    }
+
+    [OpCommandListItem] WithVault([string]$name) {
+        $this.AddArgument('--vault', $name)
+        return $this
+    }
+
+    [OpCommandListItem] WithCategory([string[]]$category) {
+        $this.AddArgument('--categories', $category)
+        return $this
+    }
+
+    [OpCommandListItem] WithCategory([string]$c1, [string]$c2) {
+        $this.AddArgument('--categories', @($c1, $c2))
+        return $this
+    }
+
+    [OpCommandListItem] WithCategory([string]$c1, [string]$c2, [string]$c3) {
+        $this.AddArgument('--categories', @($c1, $c2, $c3))
+        return $this
+    }
+
+    [OpCommandListItem] WithTag([string[]]$tag) {
+        $this.AddArgument('--tags', $tag)
+        return $this
+    }
+
+    [OpCommandListItem] WithTag([string]$t1, [string]$t2) {
+        $this.AddArgument('--tags', @($t1, $t2))
+        return $this
+    }
+
+    [OpCommandListItem] WithTag([string]$t1, [string]$t2, [string]$t3) {
+        $this.AddArgument('--tags', @($t1, $t2, $t3))
+        return $this
+    }
+}
+
+class OpCommandGetItem : OpCommandGet {
+    hidden [bool] $hasField = $false
+    hidden [bool] $hasFormat = $false
+
+    OpCommandGetItem([string]$item) : base() {
+        $this.AddArgument('item', $item)
+    }
+
+    [OpCommandGetItem] WithVault([string]$name) {
+        $this.AddArgument('--vault', $name)
+        return $this
+    }
+
+    [OpCommandGetItem] WithField([string[]]$field) {
+        $this.AddArgument('--fields', $field)
+        $this.hasField = $true
+        return $this
+    }
+
+    [OpCommandGetItem] WithField([string]$f1, [string]$f2) {
+        $this.AddArgument('--fields', @($f1, $f2))
+        $this.hasField = $true
+        return $this
+    }
+
+    [OpCommandGetItem] WithField([string]$f1, [string]$f2, [string]$f3) {
+        $this.AddArgument('--fields', @($f1, $f2, $f3))
+        $this.hasField = $true
+        return $this
+    }
+
+    hidden [OpCommandGetItem] WithFormat([string]$format) {
+        if ($this.hasFormat) {
+            Write-Error -Message 'Format has already been set'
+            return $this
+        }
+
+        if (-not $this.hasField) {
+            Write-Error -Message 'Format can only be used with Fields'
+            return $this
+        }
+
+        $this.AddArgument('--format', $format)
+        $this.hasFormat
+
+        return $this
+    }
+
+    [OpCommandGetItem] WithJsonFormat() {
+        return $this.WithFormat('JSON')
+    }
+
+    [OpCommandGetItem] WithCsvFormat() {
+        return $this.WithFormat('Csv')
+    }
+
+    [OpCommandGetItem] IncludeTrash() {
+        $this.AddArgument('--include-trash')
+        return $this
     }
 }
