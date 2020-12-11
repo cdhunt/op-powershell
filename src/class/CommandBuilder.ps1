@@ -1,4 +1,4 @@
-class Argument {
+class CommandArgument {
     [string] $Name
     [bool] $HasValue = $false
     [bool] $IsSensitive = $false
@@ -7,25 +7,25 @@ class Argument {
     hidden [scriptblock] $ValueReduce = { $args -join ',' }
     hidden [bool] $HasQuote = $false
 
-    Argument([string]$name) {
+    CommandArgument([string]$name) {
         $this.Name = $name
     }
 
-    Argument([string]$name, [object[]]$value) {
+    CommandArgument([string]$name, [object[]]$value) {
         $this.Name = $name
         $this.Value = $value
         $this.Seperator = ' '
         $this.HasValue = $true
     }
 
-    Argument([string]$name, [object[]]$value, [string]$seperator) {
+    CommandArgument([string]$name, [object[]]$value, [string]$seperator) {
         $this.Name = $name
         $this.Value = $value
         $this.HasValue = $true
         $this.Seperator = $seperator
     }
 
-    Argument([string]$name, [object[]]$value, [string]$seperator, [scriptblock]$reduce) {
+    CommandArgument([string]$name, [object[]]$value, [string]$seperator, [scriptblock]$reduce) {
         $this.Name = $name
         $this.Value = $value
         $this.HasValue = $true
@@ -33,7 +33,7 @@ class Argument {
         $this.ValueReduce = $reduce
     }
 
-    [Argument] AddValue($v) {
+    [CommandArgument] AddValue($v) {
         $this.Value += $v
         $this.HasValue = $true
 
@@ -44,19 +44,19 @@ class Argument {
         return $this
     }
 
-    [Argument] SetSeparator([string]$string) {
+    [CommandArgument] SetSeparator([string]$string) {
         $this.Seperator = $string
 
         return $this
     }
 
-    [Argument] SetQuotedValue() {
+    [CommandArgument] SetQuotedValue() {
         $this.HasQuote = $true
 
         return $this
     }
 
-    [Argument] SetValueReduce([scriptblock]$script) {
+    [CommandArgument] SetValueReduce([scriptblock]$script) {
         if ($script.ToString() -notlike '*$args *') {
             throw 'ScriptBlock must contain "$args" variable.'
         }
@@ -91,11 +91,11 @@ class Argument {
         return $_combined
     }
 
-    [System.Collections.Generic.List[Argument]] AsMultipleArguments() {
-        $_argArray = [System.Collections.Generic.List[Argument]]::new()
+    [System.Collections.Generic.List[CommandArgument]] AsMultipleArguments() {
+        $_argArray = [System.Collections.Generic.List[CommandArgument]]::new()
         if ($this.HasValue) {
             foreach ($_value in $this.Value) {
-                $_newArg = [Argument]::new($this.Name, $_value)
+                $_newArg = [CommandArgument]::new($this.Name, $_value)
                 $_newArg.Seperator = $this.Seperator
                 $_newArg.ValueReduce = $this.ValueReduce
                 $_newArg.IsSensitive = $this.IsSensitive
@@ -107,34 +107,34 @@ class Argument {
     }
 }
 
-class ThingToRun {
+class CommandBuilder {
     [string] $Name
-    hidden [System.Collections.Generic.List[Argument]] $ArgumentList = [System.Collections.Generic.List[Argument]]::new()
+    hidden [System.Collections.Generic.List[CommandArgument]] $ArgumentList = [System.Collections.Generic.List[CommandArgument]]::new()
 
-    ThingToRun($name) {
+    CommandBuilder($name) {
         $this.Name = $name
     }
 
-    [ThingToRun] AddArgument([Argument]$arg) {
+    [CommandBuilder] AddArgument([CommandArgument]$arg) {
         $this.ArgumentList.Add($arg)
 
         return $this
     }
 
-    [ThingToRun] AddArgument([string]$name) {
-        $this.ArgumentList.Add([Argument]::new($name))
+    [CommandBuilder] AddArgument([string]$name) {
+        $this.ArgumentList.Add([CommandArgument]::new($name))
 
         return $this
     }
 
-    [ThingToRun] AddArgument([string]$name, [object]$value) {
-        $this.ArgumentList.Add([Argument]::new($name, $value))
+    [CommandBuilder] AddArgument([string]$name, [object]$value) {
+        $this.ArgumentList.Add([CommandArgument]::new($name, $value))
 
         return $this
     }
 
-    [ThingToRun] AddArgument([string]$name, [object]$value, [string]$seperator) {
-        $this.ArgumentList.Add([Argument]::new($name, $value, $seperator))
+    [CommandBuilder] AddArgument([string]$name, [object]$value, [string]$seperator) {
+        $this.ArgumentList.Add([CommandArgument]::new($name, $value, $seperator))
 
         return $this
     }

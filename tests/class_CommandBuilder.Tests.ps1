@@ -1,12 +1,12 @@
-Describe 'Norton' {
+Describe 'CommandBuilder' {
     BeforeAll {
-        $class = Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath 'src', 'class', 'norton.ps1'
+        $class = Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath 'src', 'class', 'CommandBuilder.ps1'
         . $class
     }
-    Context "Argument" {
+    Context "CommandArgument" {
         Context "Defaults" {
             BeforeAll {
-                $sut = [Argument]::New('test')
+                $sut = [CommandArgument]::New('test')
             }
             It 'Should have a name property' {
                 $sut.Name | Should -Be 'test'
@@ -25,7 +25,7 @@ Describe 'Norton' {
         }
         Context "Defaults with single Value" {
             BeforeAll {
-                $sut = [Argument]::New('test', 'value')
+                $sut = [CommandArgument]::New('test', 'value')
             }
 
             It 'Should have a name property' {
@@ -45,7 +45,7 @@ Describe 'Norton' {
         }
         Context "Defaults with multi Value" {
             BeforeAll {
-                $sut = [Argument]::New('test', @('value1', 'value2'))
+                $sut = [CommandArgument]::New('test', @('value1', 'value2'))
             }
 
             It 'Should have a name property' {
@@ -65,7 +65,7 @@ Describe 'Norton' {
         }
         Context "Seperator" {
             BeforeAll {
-                $sut = [Argument]::New('test', 'value')
+                $sut = [CommandArgument]::New('test', 'value')
                 $sut = $sut.SetSeparator(':')
             }
 
@@ -79,7 +79,7 @@ Describe 'Norton' {
         }
         Context "Reduce with one value" {
             BeforeAll {
-                $sut = [Argument]::New('test', 'value')
+                $sut = [CommandArgument]::New('test', 'value')
                 $sut = $sut.SetValueReduce( { $args -join ' ' })
             }
 
@@ -99,7 +99,7 @@ Describe 'Norton' {
         }
         Context "Reduce with multiple values" {
             BeforeAll {
-                $sut = [Argument]::New('test', @('value1', 'value2'))
+                $sut = [CommandArgument]::New('test', @('value1', 'value2'))
                 $sut = $sut.SetValueReduce( { $args -join ' ' } )
             }
 
@@ -123,7 +123,7 @@ Describe 'Norton' {
         }
         Context 'Add Value' {
             BeforeAll {
-                $sut = [Argument]::New('test')
+                $sut = [CommandArgument]::New('test')
 
             }
             It 'Should not have a value' {
@@ -144,7 +144,7 @@ Describe 'Norton' {
     Context "ThingToRun" {
         Context "No arguments" {
             BeforeAll {
-                $sut = [ThingToRun]::New('test')
+                $sut = [CommandBuilder]::New('test')
             }
             It 'Should have a Name' {
                 $sut.Name | Should -Be 'test'
@@ -155,8 +155,8 @@ Describe 'Norton' {
         }
         Context "With one argument" {
             BeforeAll {
-                $sut = [ThingToRun]::New('test')
-                $arg = [Argument]::New('-arg', 'value')
+                $sut = [CommandBuilder]::New('test')
+                $arg = [CommandArgument]::New('-arg', 'value')
                 $sut = $sut.AddArgument($arg)
             }
             It 'Should have a Name' {
@@ -170,9 +170,9 @@ Describe 'Norton' {
         }
         Context "With multiple argument" {
             BeforeAll {
-                $sut = [ThingToRun]::New('test')
-                $arg1 = [Argument]::New('-arg', 'value')
-                $arg2 = [Argument]::New('-flag')
+                $sut = [CommandBuilder]::New('test')
+                $arg1 = [CommandArgument]::New('-arg', 'value')
+                $arg2 = [CommandArgument]::New('-flag')
                 $sut = $sut.AddArgument($arg1).AddArgument($arg2)
 
             }
@@ -187,8 +187,8 @@ Describe 'Norton' {
         }
         Context "With one sensitive value" {
             BeforeAll {
-                $sut = [ThingToRun]::New('test')
-                $arg = [Argument]::New('-arg', 'value')
+                $sut = [CommandBuilder]::New('test')
+                $arg = [CommandArgument]::New('-arg', 'value')
                 $arg.IsSensitive = $true
                 $sut = $sut.AddArgument($arg)
             }
@@ -207,10 +207,10 @@ Describe 'Norton' {
         }
         Context "With multiple values, one sensitive" {
             BeforeAll {
-                $sut = [ThingToRun]::New('test')
-                $arg1 = [Argument]::New('-arg', 'value')
+                $sut = [CommandBuilder]::New('test')
+                $arg1 = [CommandArgument]::New('-arg', 'value')
                 $arg1.IsSensitive = $true
-                $arg2 = [Argument]::New('-arg2', 'value2')
+                $arg2 = [CommandArgument]::New('-arg2', 'value2')
                 $sut = $sut.AddArgument($arg).AddArgument($arg2)
             }
             It 'Should only the sensetive argument' {
@@ -220,24 +220,24 @@ Describe 'Norton' {
         }
         Context 'Helper methods' {
             It '.AddArgument($name)' {
-                $sut = [ThingToRun]::New('test').AddArgument('-flag')
+                $sut = [CommandBuilder]::New('test').AddArgument('-flag')
                 $sut.ArgumentList.count | Should -Be 1
                 $sut.ToString() | Should -Be 'test -flag'
             }
             It '.AddArgument($name, $value)' {
-                $sut = [ThingToRun]::New('test').AddArgument('-flag', 'value')
+                $sut = [CommandBuilder]::New('test').AddArgument('-flag', 'value')
                 $sut.ArgumentList.count | Should -Be 1
                 $sut.ToString() | Should -Be 'test -flag value'
             }
             It '.AddArgument($name, $value, $seperator)' {
-                $sut = [ThingToRun]::New('test').AddArgument('-flag', 'value', ':')
+                $sut = [CommandBuilder]::New('test').AddArgument('-flag', 'value', ':')
                 $sut.ArgumentList.count | Should -Be 1
                 $sut.ToString() | Should -Be 'test -flag:value'
             }
         }
         Context 'Get ProcessStartInfo' {
             BeforeAll {
-                $sut = [ThingToRun]::New('test').AddArgument('-flag')
+                $sut = [CommandBuilder]::New('test').AddArgument('-flag')
             }
             It 'Should return a ProcessStartInfo object' {
                 $result = $sut.GetProcessStartInfo()
