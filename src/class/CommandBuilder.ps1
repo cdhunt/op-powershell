@@ -279,7 +279,7 @@ class OpCommandGetItem : OpCommandGet {
         }
 
         $this.AddArgument('--format', $format)
-        $this.hasFormat
+        $this.hasFormat = $true
 
         return $this
     }
