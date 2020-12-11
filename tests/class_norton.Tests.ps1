@@ -90,6 +90,12 @@ Describe 'Norton' {
                 $result = $sut.ToString()
                 $result | Should -Be 'test value'
             }
+            It 'AsMultipleArguments should also be Name Value' {
+                $result = $sut.AsMultipleArguments()
+
+                $result.Count | Should -Be 1
+                $result[0].ToString() | Should -Be 'test value'
+            }
         }
         Context "Reduce with multiple values" {
             BeforeAll {
@@ -106,6 +112,13 @@ Describe 'Norton' {
             }
             It 'Should throw if Reduce doesn''t reference $args' {
                 { $sut.SetValueReduce( { $_ -join ' ' } ) } | Should -Throw 'ScriptBlock must contain "$args" variable.'
+            }
+            It 'AsMultipleArguments should return a List of Argument' {
+                $result = $sut.AsMultipleArguments()
+
+                $result.Count | Should -Be 2
+                $result[0].ToString() | Should -Be 'test value1'
+                $result[1].ToString() | Should -Be 'test value2'
             }
         }
         Context 'Add Value' {

@@ -90,6 +90,21 @@ class Argument {
         $_combined = $_argument, $_value -join $this.Seperator
         return $_combined
     }
+
+    [System.Collections.Generic.List[Argument]] AsMultipleArguments() {
+        $_argArray = [System.Collections.Generic.List[Argument]]::new()
+        if ($this.HasValue) {
+            foreach ($_value in $this.Value) {
+                $_newArg = [Argument]::new($this.Name, $_value)
+                $_newArg.Seperator = $this.Seperator
+                $_newArg.ValueReduce = $this.ValueReduce
+                $_newArg.IsSensitive = $this.IsSensitive
+                $_argArray.Add($_newArg)
+            }
+        }
+
+        return $_argArray
+    }
 }
 
 class ThingToRun {
