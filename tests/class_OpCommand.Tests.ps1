@@ -140,9 +140,24 @@ Describe 'OpCommand' {
             $result = $sut.WithField('website', 'username').WithCsvFormat().ToString()
             $result | Should -Be 'op get item test_secret --fields website,username --format CSV'
         }
+        It 'Format without Field errors' {
+            $ErrorActionPreference = 'Stop'
+            { $sut.WithCsvFormat().ToString() } | Should -Throw 'Format can only be used with Fields'
+
+        }
         It 'Can''t add Format without Field' {
+            $ErrorActionPreference = 'SilentlyContinue'
             $result = $sut.WithCsvFormat().ToString()
             $result | Should -Be 'op get item test_secret'
+        }
+        It 'Change Format errors' {
+            $ErrorActionPreference = 'Stop'
+            { $sut.WithField('website', 'username').WithJsonFormat().WithCsvFormat() } | Should -Throw 'Format has already been set'
+        }
+        It 'Can''t change Format' {
+            $ErrorActionPreference = 'SilentlyContinue'
+            $result = $sut.WithField('website', 'username').WithJsonFormat().WithCsvFormat().ToString()
+            $result | Should -Be 'op get item test_secret --fields website,username --format JSON'
         }
     }
 }
