@@ -43,4 +43,4 @@ jobs:
 
     - name: Test
       shell: pwsh
-      run: Invoke-Pester -EnableExit
+      run: Invoke-Pester -CI
