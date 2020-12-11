@@ -107,6 +107,17 @@ class CommandArgument {
     }
 }
 
+class CommandRunResult {
+    [bool] $Success
+    [string] $Output
+    hidden [string] $StdOut
+    hidden [string] $StdErr
+
+    CommandRunResult() {
+        $this.Success = $false
+    }
+}
+
 class CommandBuilder {
     [string] $Name
     hidden [System.Collections.Generic.List[CommandArgument]] $ArgumentList = [System.Collections.Generic.List[CommandArgument]]::new()
@@ -183,13 +194,14 @@ class CommandBuilder {
         return $message
     }
 
-    [string] Run() {
+    [CommandRunResult] Run() {
         Write-Verbose ('(Run) Command="{0}"' -f $this.ToString($true))
 
         $_process = [Diagnostics.Process]::new()
         $_process.StartInfo = $this.GetProcessStartInfo()
         $_cleanExit = $false
         $_message = [string]::Empty
+        $_result = [CommandRunResult]::new()
 
         try {
             $_process.Start() | Out-Null
@@ -220,15 +232,23 @@ class CommandBuilder {
 
         if ($_cleanExit) {
 
-            $_message = $_process.StandardOutput.ReadToEnd()
+            $_stdOut = $_process.StandardOutput.ReadToEnd()
+            $_message = $_stdOut
             $_stdErr = $_process.StandardError.ReadToEnd()
 
-            if (-not [string]::IsNullOrEmpty($_stdErr) ) {
-                Write-Error $this.ParseStdErr($_stdErr)
+            if ([string]::IsNullOrEmpty($_stdErr) ) {
+                $_result.Success = $true
             }
+            else {
+                $_message = $this.ParseStdErr($_stdErr)
+            }
+
+            $_result.Output = $_message
+            $_result.StdOut = $_stdOut
+            $_result.StdErr = $_stdErr
         }
 
-        return $_message
+        return $_result
     }
 }
 
@@ -237,20 +257,13 @@ class OpCommand : CommandBuilder {
     OpCommand() : base('op') {}
 
     [string] ParseStdErr([string]$message) {
-        $_groups = Select-String -InputObject $message -Pattern '\[ERROR\] (?<date>\d{4}\W\d{1,2}\W\d{1,2}) (?<time>\d{2}:\d{2}:\d{2}) (?<message>.*)'
+        $_patternSignIn = [regex]'\[ERROR\] (?<date>\d{4}\W\d{1,2}\W\d{1,2}) (?<time>\d{2}:\d{2}:\d{2}).+(?<message>sign(ed){0,1} in)'
 
-        if ($null -eq $_groups) {
-            return [string]::Empty
+        if ($_patternSignIn.Match($message).Success) {
+            return 'You are not currently signed in.'
         }
 
-        $_rawMessage = $_groups.Matches.Groups.Where( { $_.Name -eq 'message' }).Value
-
-        $_firstChar = $_rawMessage.Substring(0, 1).ToUpper()
-        $_rest = $_rawMessage.Substring(1)
-        $_ending = if ($_rawMessage[-1] -ne '.') { '.' } else { [string]::Empty }
-        $_message = '{0}{1}{2}' -f $_firstChar, $_rest, $_ending
-
-        return $_message
+        return [string]::Empty
     }
 }
 
@@ -371,3 +384,4 @@ class OpCommandGetItem : OpCommandGet {
         return $this
     }
 }
+
