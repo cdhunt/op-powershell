@@ -103,6 +103,27 @@ Describe 'OpCommand' {
             $result | Should -Be 'op list items --categories Login,Password --tags tag1,tag2 --vault test_vault'
         }
     }
+    Context 'List Item as ProcessStartInfo' {
+        BeforeEach {
+            $sut = [OpCommandListItem]::New().WithCategory('Login', 'Password').WithTag('tag1', 'tag2').WithVault('test_vault').GetProcessStartInfo()
+        }
+        It 'Is as [Diagnostics.ProcessStartInfo]' {
+            $sut | Should -BeOfType Diagnostics.ProcessStartInfo
+        }
+        It 'Should have valid properties' {
+            $sut.FileName = 'op'
+            $sut.RedirectStandardError = $true
+            $sut.RedirectStandardOutput = $true
+        }
+        It 'Should have all arguments' {
+            $sut.ArgumentList.Count | Should -Be 5
+            $sut.ArgumentList[0] | Should -Be 'list'
+            $sut.ArgumentList[1] | Should -Be 'items'
+            $sut.ArgumentList[2] | Should -Be '--categories Login,Password'
+            $sut.ArgumentList[3] | Should -Be '--tags tag1,tag2'
+            $sut.ArgumentList[4] | Should -Be '--vault test_vault'
+        }
+    }
     Context 'Get Item with Arguments' {
         BeforeEach {
             $sut = [OpCommandGetItem]::New('test_secret')
@@ -158,6 +179,26 @@ Describe 'OpCommand' {
             $ErrorActionPreference = 'SilentlyContinue'
             $result = $sut.WithField('website', 'username').WithJsonFormat().WithCsvFormat().ToString()
             $result | Should -Be 'op get item test_secret --fields website,username --format JSON'
+        }
+    }
+    Context 'Get Item as ProcessStartInfo' {
+        BeforeEach {
+            $sut = [OpCommandGetItem]::New('test_secret').WithField('website', 'username').WithJsonFormat().GetProcessStartInfo()
+        }
+        It 'Is as [Diagnostics.ProcessStartInfo]' {
+            $sut | Should -BeOfType Diagnostics.ProcessStartInfo
+        }
+        It 'Should have valid properties' {
+            $sut.FileName = 'op'
+            $sut.RedirectStandardError = $true
+            $sut.RedirectStandardOutput = $true
+        }
+        It 'Should have all arguments' {
+            $sut.ArgumentList.Count | Should -Be 4
+            $sut.ArgumentList[0] | Should -Be 'get'
+            $sut.ArgumentList[1] | Should -Be 'item test_secret'
+            $sut.ArgumentList[2] | Should -Be '--fields website,username'
+            $sut.ArgumentList[3] | Should -Be '--format JSON'
         }
     }
 }
