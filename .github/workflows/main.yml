@@ -11,7 +11,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      psmodules: Pester:5.1.0
+      psmodules: Pester:5.1.1
 
     steps:
     - name: Check out repository code
@@ -43,4 +43,4 @@ jobs:
 
     - name: Test
       shell: pwsh
-      run: Invoke-Pester
+      run: Invoke-Pester -EnableExit
