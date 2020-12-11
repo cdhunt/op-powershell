@@ -116,12 +116,15 @@ Describe 'OpCommand' {
             $sut.RedirectStandardOutput = $true
         }
         It 'Should have all arguments' {
-            $sut.ArgumentList.Count | Should -Be 5
+            $sut.ArgumentList.Count | Should -Be 8
             $sut.ArgumentList[0] | Should -Be 'list'
             $sut.ArgumentList[1] | Should -Be 'items'
-            $sut.ArgumentList[2] | Should -Be '--categories Login,Password'
-            $sut.ArgumentList[3] | Should -Be '--tags tag1,tag2'
-            $sut.ArgumentList[4] | Should -Be '--vault test_vault'
+            $sut.ArgumentList[2] | Should -Be '--categories'
+            $sut.ArgumentList[3] | Should -Be 'Login,Password'
+            $sut.ArgumentList[4] | Should -Be '--tags'
+            $sut.ArgumentList[5] | Should -Be 'tag1,tag2'
+            $sut.ArgumentList[6] | Should -Be '--vault'
+            $sut.ArgumentList[7] | Should -Be 'test_vault'
         }
     }
     Context 'Get Item with Arguments' {
@@ -194,11 +197,67 @@ Describe 'OpCommand' {
             $sut.RedirectStandardOutput = $true
         }
         It 'Should have all arguments' {
-            $sut.ArgumentList.Count | Should -Be 4
+            $sut.ArgumentList.Count | Should -Be 7
             $sut.ArgumentList[0] | Should -Be 'get'
-            $sut.ArgumentList[1] | Should -Be 'item test_secret'
-            $sut.ArgumentList[2] | Should -Be '--fields website,username'
-            $sut.ArgumentList[3] | Should -Be '--format JSON'
+            $sut.ArgumentList[1] | Should -Be 'item'
+            $sut.ArgumentList[2] | Should -Be 'test_secret'
+            $sut.ArgumentList[3] | Should -Be '--fields'
+            $sut.ArgumentList[4] | Should -Be 'website,username'
+            $sut.ArgumentList[5] | Should -Be '--format'
+            $sut.ArgumentList[6] | Should -Be 'JSON'
+        }
+    }
+    Context 'ParseError' {
+        BeforeEach {
+            $commandHelpMessage = @'
+To list objects and events, use one of the `list` subcommands.
+
+Usage:
+    op list [command]
+
+Available Commands:
+    documents   Get a list of documents
+    events      Get a list of events from the Activity Log
+    groups      Get a list of groups
+    items       Get a list of items
+    templates   Get a list of templates
+    users       Get the list of users
+    vaults      Get a list of vaults
+
+Flags:
+    -h, --help   get help with list
+
+Global Flags:
+        --account shorthand   use the account with this shorthand
+        --cache               store and use cached information
+        --config directory    use this configuration directory
+        --session token       authenticate with this session token
+
+Use "op list [command] --help" for more information about a command.
+'@
+            $signinError = '[ERROR] 2020/12/11 13:48:31 session expired, sign in to create a new session'
+            $signinError2 = '[ERROR] 2020/12/11 15:01:17 You are not currently signed in. Please run `op signin --help` for instructions'
+            $ErrorActionPreference = 'Stop'
+        }
+        It 'Base passes the message through to Error' {
+            $sut = [CommandBuilder]::new('command')
+            $sut.ParseStdErr($signinError)  | Should -Be '[ERROR] 2020/12/11 13:48:31 session expired, sign in to create a new session'
+        }
+        It 'Parses Command Help should have no Error message' {
+            $sut = [OpCommand]::new()
+            $sut.ParseStdErr($commandHelpMessage) | Should -BeNullOrEmpty
+        }
+        It 'Parses Signin Error should an Error message' {
+            $sut = [OpCommand]::new()
+            $sut.ParseStdErr($signinError)  | Should -Be 'You are not currently signed in.'
+        }
+        It 'Parses Signin Error 2 should an Error message' {
+            $sut = [OpCommand]::new()
+            $sut.ParseStdErr($signinError2)  | Should -Be 'You are not currently signed in.'
+        }
+        It 'Child class should parse Error message' {
+            $sut = [OpCommandListItem]::new()
+            $sut.ParseStdErr($signinError)  | Should -Be 'You are not currently signed in.'
         }
     }
 }

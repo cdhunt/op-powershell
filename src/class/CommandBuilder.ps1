@@ -155,8 +155,6 @@ class CommandBuilder {
         else {
             return '{0}' -f $_command
         }
-
-
     }
 
     [Diagnostics.ProcessStartInfo] GetProcessStartInfo() {
@@ -164,13 +162,73 @@ class CommandBuilder {
         $_processInfo.FileName = $this.Name
         $_processInfo.RedirectStandardError = $true
         $_processInfo.RedirectStandardOutput = $true
+        $_processInfo.RedirectStandardInput = $true
         $_processInfo.UseShellExecute = $false
 
         $this.ArgumentList | ForEach-Object {
-            $_processInfo.ArgumentList.Add($_.ToString())
+            if ($_.HasValue) {
+                $_value = $_.ValueReduce.Invoke($_.Value)
+                $_processInfo.ArgumentList.Add($_.Name)
+                $_processInfo.ArgumentList.Add($_value)
+            }
+            else {
+                $_processInfo.ArgumentList.Add($_.Name)
+            }
         }
 
         return $_processInfo
+    }
+
+    [string] ParseStdErr([string]$message) {
+        return $message
+    }
+
+    [string] Run() {
+        Write-Verbose ('(Run) Command="{0}"' -f $this.ToString($true))
+
+        $_process = [Diagnostics.Process]::new()
+        $_process.StartInfo = $this.GetProcessStartInfo()
+        $_cleanExit = $false
+        $_message = [string]::Empty
+
+        try {
+            $_process.Start() | Out-Null
+        }
+        catch [ObjectDisposedException] {
+            Write-Error 'No file name was specified.'
+        }
+        catch [InvalidOperationException] {
+            Write-Error 'The process object has already been disposed.'
+        }
+        catch [PlatformNotSupportedException] {
+            Write-Error 'This member is not supported on this platform.'
+        }
+        catch {
+            Write-Error 'An error occurred when opening the associated file.'
+        }
+
+        try {
+            $_process.WaitForExit(10000)
+            $_cleanExit = $true
+        }
+        catch [SystemException] {
+            Write-Error 'No process Id has been set, and a Handle from which the Id property can be determined does not exist or there is no process associated with this Process object.'
+        }
+        catch {
+            Write-Error 'The wait setting could not be accessed.'
+        }
+
+        if ($_cleanExit) {
+
+            $_message = $_process.StandardOutput.ReadToEnd()
+            $_stdErr = $_process.StandardError.ReadToEnd()
+
+            if (-not [string]::IsNullOrEmpty($_stdErr) ) {
+                Write-Error $this.ParseStdErr($_stdErr)
+            }
+        }
+
+        return $_message
     }
 }
 
@@ -178,6 +236,22 @@ class OpCommand : CommandBuilder {
 
     OpCommand() : base('op') {}
 
+    [string] ParseStdErr([string]$message) {
+        $_groups = Select-String -InputObject $message -Pattern '\[ERROR\] (?<date>\d{4}\W\d{1,2}\W\d{1,2}) (?<time>\d{2}:\d{2}:\d{2}) (?<message>.*)'
+
+        if ($null -eq $_groups) {
+            return [string]::Empty
+        }
+
+        $_rawMessage = $_groups.Matches.Groups.Where( { $_.Name -eq 'message' }).Value
+
+        $_firstChar = $_rawMessage.Substring(0, 1).ToUpper()
+        $_rest = $_rawMessage.Substring(1)
+        $_ending = if ($_rawMessage[-1] -ne '.') { '.' } else { [string]::Empty }
+        $_message = '{0}{1}{2}' -f $_firstChar, $_rest, $_ending
+
+        return $_message
+    }
 }
 
 class OpCommandList : OpCommand {
