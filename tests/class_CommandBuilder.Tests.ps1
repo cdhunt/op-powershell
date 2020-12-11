@@ -186,7 +186,7 @@ Describe 'CommandBuilder' {
             }
         }
         Context "With one sensitive value" {
-            BeforeAll {
+            BeforeEach {
                 $sut = [CommandBuilder]::New('test')
                 $arg = [CommandArgument]::New('-arg', 'value')
                 $arg.IsSensitive = $true
@@ -206,12 +206,12 @@ Describe 'CommandBuilder' {
             }
         }
         Context "With multiple values, one sensitive" {
-            BeforeAll {
+            BeforeEach {
                 $sut = [CommandBuilder]::New('test')
                 $arg1 = [CommandArgument]::New('-arg', 'value')
                 $arg1.IsSensitive = $true
                 $arg2 = [CommandArgument]::New('-arg2', 'value2')
-                $sut = $sut.AddArgument($arg).AddArgument($arg2)
+                $sut = $sut.AddArgument($arg1).AddArgument($arg2)
             }
             It 'Should only the sensetive argument' {
                 $sut.ArgumentList.count | Should -Be 2
@@ -249,4 +249,3 @@ Describe 'CommandBuilder' {
         }
     }
 }
-
