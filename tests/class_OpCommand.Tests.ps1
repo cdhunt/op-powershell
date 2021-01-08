@@ -21,6 +21,10 @@ Describe 'OpCommand' {
             $result = $sut.ToString()
             $result | Should -Be 'op'
         }
+        It 'Has message data' {
+            $sut.LocalizedMessage | Should -Not -BeNullOrEmpty
+            $sut.LocalizedMessage.Count | Should -Be 2
+        }
     }
     Context 'List' {
         BeforeAll {
@@ -249,15 +253,15 @@ Use "op list [command] --help" for more information about a command.
         }
         It 'Parses Signin Error should an Error message' {
             $sut = [OpCommand]::new()
-            $sut.ParseStdErr($signinError)  | Should -Be 'You are not currently signed in.'
+            $sut.ParseStdErr($signinError)  | Should -Be 'errorSignin'
         }
         It 'Parses Signin Error 2 should an Error message' {
             $sut = [OpCommand]::new()
-            $sut.ParseStdErr($signinError2)  | Should -Be 'You are not currently signed in.'
+            $sut.ParseStdErr($signinError2)  | Should -Be 'errorSignin'
         }
         It 'Child class should parse Error message' {
             $sut = [OpCommandListItem]::new()
-            $sut.ParseStdErr($signinError)  | Should -Be 'You are not currently signed in.'
+            $sut.ParseStdErr($signinError)  | Should -Be 'errorSignin'
         }
     }
 }

@@ -124,6 +124,7 @@ class CommandBuilder {
 
     CommandBuilder($name) {
         $this.Name = $name
+
     }
 
     [CommandBuilder] AddArgument([CommandArgument]$arg) {
@@ -173,7 +174,7 @@ class CommandBuilder {
         $_processInfo.FileName = $this.Name
         $_processInfo.RedirectStandardError = $true
         $_processInfo.RedirectStandardOutput = $true
-        $_processInfo.RedirectStandardInput = $true
+        $_processInfo.RedirectStandardInput = $false
         $_processInfo.UseShellExecute = $false
 
         $this.ArgumentList | ForEach-Object {
@@ -252,18 +253,91 @@ class CommandBuilder {
     }
 }
 
-class OpCommand : CommandBuilder {
+class OpCommandRunResult : CommandRunResult {
+    [bool] $SigninRequired
 
-    OpCommand() : base('op') {}
+    OpCommandRunResult() : base() {
+        $this.SigninRequire = $false
+    }
+}
+
+class OpCommand : CommandBuilder {
+    hidden $LocalizedMessage
+
+    OpCommand() : base('op') {
+        $this.LocalizedMessage = Import-LocalizedData -FileName message.psd1 -BaseDirectory $PSScriptRoot -ErrorAction Stop
+    }
 
     [string] ParseStdErr([string]$message) {
         $_patternSignIn = [regex]'\[ERROR\] (?<date>\d{4}\W\d{1,2}\W\d{1,2}) (?<time>\d{2}:\d{2}:\d{2}).+(?<message>sign(ed){0,1} in)'
 
         if ($_patternSignIn.Match($message).Success) {
-            return 'You are not currently signed in.'
+            return 'errorSignin'
         }
 
         return [string]::Empty
+    }
+
+    [OpCommandRunResult] Run() {
+        Write-Verbose ('(Run) Command="{0}"' -f $this.ToString($true))
+
+        $_process = [Diagnostics.Process]::new()
+        $_process.StartInfo = $this.GetProcessStartInfo()
+        $_cleanExit = $false
+        $_message = [string]::Empty
+        $_result = [OpCommandRunResult]::new()
+
+        try {
+            $_process.Start() | Out-Null
+        }
+        catch [ObjectDisposedException] {
+            Write-Error 'No file name was specified.'
+        }
+        catch [InvalidOperationException] {
+            Write-Error 'The process object has already been disposed.'
+        }
+        catch [PlatformNotSupportedException] {
+            Write-Error 'This member is not supported on this platform.'
+        }
+        catch {
+            Write-Error 'An error occurred when opening the associated file.'
+        }
+
+        try {
+            $_process.WaitForExit(10000)
+            $_cleanExit = $true
+        }
+        catch [SystemException] {
+            Write-Error 'No process Id has been set, and a Handle from which the Id property can be determined does not exist or there is no process associated with this Process object.'
+        }
+        catch {
+            Write-Error 'The wait setting could not be accessed.'
+        }
+
+        if ($_cleanExit) {
+
+            $_stdOut = $_process.StandardOutput.ReadToEnd()
+            $_message = $_stdOut
+            $_stdErr = $_process.StandardError.ReadToEnd()
+
+            if ([string]::IsNullOrEmpty($_stdErr) ) {
+                $_result.Success = $true
+            }
+            else {
+                $_parsedErrorMessage = $this.ParseStdErr($_stdErr)
+
+                if ($_parsedErrorMessage -eq 'errorSignin') {
+                    $_result.SigninRequired = $true
+                    $_message = $this.LocalizedMessage[$_parsedErrorMessage]
+                }
+            }
+
+            $_result.Output = $_message
+            $_result.StdOut = $_stdOut
+            $_result.StdErr = $_stdErr
+        }
+
+        return $_result
     }
 }
 
@@ -385,3 +459,34 @@ class OpCommandGetItem : OpCommandGet {
     }
 }
 
+class OpCommandSignin : OpCommand {
+    hidden [securestring]$Password
+
+    OpCommandSignin([string]$account, [securestring]$password) : base() {
+        $this.AddArgument('signin')
+        $this.AddArgument($account)
+        $this.AddArgument('--raw')
+        $this.Password = $password
+    }
+
+    [OpCommandRunResult] Run() {
+        Write-Verbose ('(Run) Command="{0}"' -f $this.ToString($true))
+
+        $_result = [OpCommandRunResult]::new()
+
+        $_expression = $this.ToString()
+        $_output = $this.LocalizedMessage['errorNoOutput']
+
+        try {
+            $_output = Invoke-Expression -Command $_expression -ErrorAction Stop 2>&1
+        }
+        catch {
+            Write-Error -Message $_.Message
+        }
+
+        $_result.Output = $_output
+        $_result.Success = $true
+
+        return $_result
+    }
+}
