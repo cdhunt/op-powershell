@@ -1,0 +1,125 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/Crescendo/master/Microsoft.PowerShell.Crescendo/schemas/2022-06",
+    "Commands": [
+        {
+            "Verb": "Get",
+            "Noun": "OpSecretList",
+            "OriginalName": "op",
+            "OriginalCommandElements": [
+                "item",
+                "list",
+                "--format",
+                "json"
+            ],
+            "Description": "List secrets",
+            "Parameters": [
+                {
+                    "Name": "Vault",
+                    "OriginalName": "--vault=",
+                    "ParameterType": "string",
+                    "NoGap": true
+                }
+            ],
+            "OutputHandlers": [
+                {
+                    "ParameterSetName": "Default",
+                    "Handler": "$input | ConvertFrom-Json | Foreach-Object {[PSCustomObject]@{PSTypeName='OpLoginSummary'; Id=$_.id; Name=$_.title; Vault=$_.vault.name; Created=$_.created_at; Updated=$_.updated_at} }",
+                    "StreamOutput": true
+                }
+            ]
+        },
+        {
+            "Verb": "Get",
+            "Noun": "OpSecret",
+            "OriginalName": "op",
+            "OriginalCommandElements": [
+                "item",
+                "get",
+                "--format",
+                "json"
+            ],
+            "Description": "Get a secret",
+            "Parameters": [
+                {
+                    "Name": "Name",
+                    "OriginalName": "",
+                    "Position": 0,
+                    "Description": "An item's name or its unique identifier",
+                    "ParameterType": "string"
+                },
+                {
+                    "Name": "Vault",
+                    "OriginalName": "--vault=",
+                    "ParameterType": "string",
+                    "NoGap": true
+                }
+            ],
+            "OutputHandlers": [
+                {
+                    "ParameterSetName": "Default",
+                    "Handler": "$input | ConvertFrom-Json | Foreach-Object {[PSCustomObject]@{PSTypeName='OpLogin'; Id=$_.id; Name=$_.title; UserName=$_.fields.Where({$_.id -eq 'username'}).value; Vault=$_.vault.name; Created=$_.created_at; Updated=$_.updated_at}}",
+                    "StreamOutput": true
+                }
+            ]
+        },
+        {
+            "Verb": "New",
+            "Noun": "OpSecret",
+            "OriginalName": "op",
+            "OriginalCommandElements": [
+                "item",
+                "create",
+                "--format",
+                "json"
+            ],
+            "Description": "Create a new secret",
+            "Parameters": [
+                {
+                    "Name": "Category",
+                    "OriginalName": "--category=",
+                    "ParameterType": "string",
+                    "Description": "Specify which template to use",
+                    "DefaultValue": "login",
+                    "AdditionalParameterAttributes": [
+                        "[ValidateSet('login','password')]"
+                    ],
+                    "NoGap": true
+                },
+                {
+                    "Name": "Name",
+                    "OriginalName": "--title=",
+                    "ParameterType": "string",
+                    "NoGap": true
+                },
+                {
+                    "Name": "Vault",
+                    "OriginalName": "--vault=",
+                    "ParameterType": "string",
+                    "NoGap": true
+                },
+                {
+                    "Name": "Username",
+                    "OriginalName": "--username=",
+                    "ParameterType": "string",
+                    "NoGap": true
+                },
+                {
+                    "Name": "Password",
+                    "OriginalName": "password=",
+                    "ParameterType": "SecureString",
+                    "Description": "The password",
+                    "ArgumentTransform": "param([SecureString]$p) ConvertFrom-SecureString -SecureString $p -AsPlainText",
+                    "Mandatory": true,
+                    "NoGap": true
+                }
+            ],
+            "OutputHandlers": [
+                {
+                    "ParameterSetName": "Default",
+                    "Handler": "$input | ConvertFrom-Json",
+                    "StreamOutput": true
+                }
+            ]
+        }
+    ]
+}
