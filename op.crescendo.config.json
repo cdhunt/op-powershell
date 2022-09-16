@@ -12,10 +12,18 @@
                 "json"
             ],
             "Description": "List secrets",
+            "Parameters": [
+                {
+                    "Name": "Vault",
+                    "OriginalName": "--vault=",
+                    "ParameterType": "string",
+                    "NoGap": true
+                }
+            ],
             "OutputHandlers": [
                 {
                     "ParameterSetName": "Default",
-                    "Handler": "$input | ConvertFrom-Json",
+                    "Handler": "$input | ConvertFrom-Json | Foreach-Object {[PSCustomObject]@{PSTypeName='OpLoginSummary'; Id=$_.id; Name=$_.title; Vault=$_.vault.name; Created=$_.created_at; Updated=$_.updated_at} }",
                     "StreamOutput": true
                 }
             ]
@@ -38,12 +46,18 @@
                     "Position": 0,
                     "Description": "An item's name or its unique identifier",
                     "ParameterType": "string"
+                },
+                {
+                    "Name": "Vault",
+                    "OriginalName": "--vault=",
+                    "ParameterType": "string",
+                    "NoGap": true
                 }
             ],
             "OutputHandlers": [
                 {
                     "ParameterSetName": "Default",
-                    "Handler": "$input | ConvertFrom-Json",
+                    "Handler": "$input | ConvertFrom-Json | Foreach-Object {[PSCustomObject]@{PSTypeName='OpLogin'; Id=$_.id; Name=$_.title; UserName=$_.fields.Where({$_.id -eq 'username'}).value; Vault=$_.vault.name; Created=$_.created_at; Updated=$_.updated_at}}",
                     "StreamOutput": true
                 }
             ]
@@ -54,7 +68,9 @@
             "OriginalName": "op",
             "OriginalCommandElements": [
                 "item",
-                "create"
+                "create",
+                "--format",
+                "json"
             ],
             "Description": "Create a new secret",
             "Parameters": [
@@ -76,6 +92,12 @@
                     "NoGap": true
                 },
                 {
+                    "Name": "Vault",
+                    "OriginalName": "--vault=",
+                    "ParameterType": "string",
+                    "NoGap": true
+                },
+                {
                     "Name": "Username",
                     "OriginalName": "--username=",
                     "ParameterType": "string",
@@ -89,6 +111,13 @@
                     "ArgumentTransform": "param([SecureString]$p) ConvertFrom-SecureString -SecureString $p -AsPlainText",
                     "Mandatory": true,
                     "NoGap": true
+                }
+            ],
+            "OutputHandlers": [
+                {
+                    "ParameterSetName": "Default",
+                    "Handler": "$input | ConvertFrom-Json",
+                    "StreamOutput": true
                 }
             ]
         }

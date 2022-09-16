@@ -16,12 +16,25 @@ function Get-OpSecretList
 [PowerShellCustomFunctionAttribute(RequiresElevation=$False)]
 [CmdletBinding()]
 
-param(    )
+param(
+[Parameter()]
+[string]$Vault
+    )
 
 BEGIN {
-    $__PARAMETERMAP = @{}
+    $__PARAMETERMAP = @{
+         Vault = @{
+               OriginalName = '--vault='
+               OriginalPosition = '0'
+               Position = '2147483647'
+               ParameterType = 'string'
+               ApplyToExecutable = $False
+               NoGap = $True
+               }
+    }
+
     $__outputHandlers = @{
-        Default = @{ StreamOutput = $True; Handler = { $input | ConvertFrom-Json } }
+        Default = @{ StreamOutput = $True; Handler = { $input | ConvertFrom-Json | Foreach-Object {[PSCustomObject]@{Id=$_.id; Name=$_.title; Vault=$_.vault.name; Created=$_.created_at; Updated=$_.updated_at} } } }
     }
 }
 
@@ -91,6 +104,11 @@ PROCESS {
 .DESCRIPTION
 List secrets
 
+.PARAMETER Vault
+
+
+
+
 #>
 }
 
@@ -104,7 +122,9 @@ function Get-OpSecret
 
 param(
 [Parameter(Position=0)]
-[string]$Name
+[string]$Name,
+[Parameter()]
+[string]$Vault
     )
 
 BEGIN {
@@ -117,10 +137,18 @@ BEGIN {
                ApplyToExecutable = $False
                NoGap = $False
                }
+         Vault = @{
+               OriginalName = '--vault='
+               OriginalPosition = '0'
+               Position = '2147483647'
+               ParameterType = 'string'
+               ApplyToExecutable = $False
+               NoGap = $True
+               }
     }
 
     $__outputHandlers = @{
-        Default = @{ StreamOutput = $True; Handler = { $input | ConvertFrom-Json } }
+        Default = @{ StreamOutput = $True; Handler = { $input | ConvertFrom-Json | Foreach-Object {[PSCustomObject]@{Id=$_.id; Name=$_.title; UserName=$_.fields.Where({$_.id -eq 'username'}).value; Vault=$_.vault.name; Created=$_.created_at; Updated=$_.updated_at}} } }
     }
 }
 
@@ -194,6 +222,10 @@ Get a secret
 An item's name or its unique identifier
 
 
+.PARAMETER Vault
+
+
+
 
 #>
 }
@@ -213,6 +245,8 @@ param(
 [string]$Category = "login",
 [Parameter()]
 [string]$Name,
+[Parameter()]
+[string]$Vault,
 [Parameter()]
 [string]$Username,
 [Parameter(Mandatory=$true)]
@@ -237,6 +271,14 @@ BEGIN {
                ApplyToExecutable = $False
                NoGap = $True
                }
+         Vault = @{
+               OriginalName = '--vault='
+               OriginalPosition = '0'
+               Position = '2147483647'
+               ParameterType = 'string'
+               ApplyToExecutable = $False
+               NoGap = $True
+               }
          Username = @{
                OriginalName = '--username='
                OriginalPosition = '0'
@@ -255,7 +297,9 @@ BEGIN {
                }
     }
 
-    $__outputHandlers = @{ Default = @{ StreamOutput = $true; Handler = { $input } } }
+    $__outputHandlers = @{
+        Default = @{ StreamOutput = $True; Handler = { $input | ConvertFrom-Json } }
+    }
 }
 
 PROCESS {
@@ -267,6 +311,8 @@ PROCESS {
     if ($__boundParameters["Debug"]){wait-debugger}
     $__commandArgs += 'item'
     $__commandArgs += 'create'
+    $__commandArgs += '--format'
+    $__commandArgs += 'json'
     foreach ($paramName in $__boundParameters.Keys|
             Where-Object {!$__PARAMETERMAP[$_].ApplyToExecutable}|
             Sort-Object {$__PARAMETERMAP[$_].OriginalPosition}) {
@@ -327,6 +373,10 @@ Specify which template to use
 
 
 .PARAMETER Name
+
+
+
+.PARAMETER Vault
 
 
 
